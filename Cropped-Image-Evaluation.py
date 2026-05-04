@@ -4,11 +4,13 @@ import matplotlib.pyplot as plt
 import imageio.v3 as iio
 import os
 import laserbeamsize as lbs
+from scipy.ndimage import gaussian_filter
 
 # -----------------------------
 # PARAMETERS
 # -----------------------------
-base_folder = "./"   # contains lens1, lens2, ...
+base_folder = "./Sample9-26-03-2026"   # contains lens1, lens2, ...
+#base_folder = "./NoSample"
 num_lenses = 1
 
 pixel_size = 5.2e-6      # meters
@@ -23,36 +25,50 @@ z_positions = None
 for lens_idx in range(1, num_lenses+1):
     folder = os.path.join(base_folder, f"lens{lens_idx}")
 
-    files = sorted([
-        f for f in os.listdir(folder)
-        if f.lower().endswith((".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp"))
-    ])
+    files = sorted(
+        [f for f in os.listdir(folder)
+        if f.lower().endswith((".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp"))],
+        key=lambda x: int(x.split("_")[-1].split(".")[0])
+    )
 
     diameters = []
     
     for i, fname in enumerate(files):
         path = os.path.join(folder, fname)
-
+        print("Now reading: ", fname, "\n")
         img = iio.imread(path).astype(float)
         # convert RGB → grayscale if needed
         if img.ndim == 3:
             img = img.mean(axis=2)   # simple and robust
-        # normalize (important!)
-        img = img / 255.0
-
-        # subtract background
-        img = img - np.min(img)
-
+        
+        # subtract background (robust)
+        #img = gaussian_filter(img, sigma=1)
+        #bg = np.percentile(img, 5)   # better than min()
+        #img = img - bg
+        #img[img < 0] = 0
+        
+        # normalize
+        #img = img / np.max(img)
+        #plt.imshow(img)
+        #plt.show()
+        
+        img = lbs.subtract_iso_background(img)
         try:
-            cx, cy, d_major, d_minor, phi = lbs.beam_size(img)
-
+            cx, cy, d_major, d_minor, phi = lbs.beam_size(img, iso_noise=False,mask_diameters =1, phi_fixed = -0.35)
+            print("Angle of fitting:", phi, "\n")
             d = 0.5 * (d_major + d_minor)
+            #d= d_major
             diameters.append(d * pixel_size)
             
+            print("found diameter: ", str(d), "\n")
+            
             # plot every 5th image
-            if i % 5 == 0:
+            if i % 2 == 0:
                 lbs.plot_image_analysis(img)
-                plt.title(f"Lens {lens_idx}, image {fname}")
+                #plt.title(f"Lens {lens_idx}, image {fname}")
+                plt.show()
+                plt.imshow(img)
+                plt.scatter(cx, cy)
                 plt.show()
 
         except Exception as e:
