@@ -510,7 +510,7 @@ green_cmap = LinearSegmentedColormap.from_list(
         (0.0, 1.0, 0.0),   # pure green (0,255,0)
         (0.0, 1.0, 0.7)    # light blue (0,128,255)
     ]
-)
+)text
 
 greens = green_cmap(np.linspace(0, 1, len(selected_lenses)))
 reds = red_cmap(np.linspace(0, 1, len(selected_lenses)))
@@ -706,6 +706,8 @@ plt.show()
 # %% Good plot of Laser Divergence
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+
 
 df = pd.read_csv("beam_data.csv")
 df_fit = pd.read_csv("fit_results.csv")
@@ -769,5 +771,6 @@ plt.yticks(fontsize=14)
 
 plt.legend(fontsize=14)
 plt.tight_layout()
+plt.savefig("Laser-Divergence")
 plt.show()
 # %%
